@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "setup": "npm install && npx playwright install --with-deps",
-    "test": "rm -rf allure-results && npx playwright test --project=chromium && npm run allure",
+    "test": "rm -rf allure-results && npx playwright test; npm run allure",
     "test:smoke": "rm -rf allure-results && npx playwright test --project=chromium tests/smoke-tests && npx allure generate allure-results --clean -o allure-report",
     "test:regression": "rm -rf allure-results && npx playwright test --project=chromium tests/regression && npx allure generate allure-results --clean -o allure-report",
     "test:headed": "npx playwright test --headed",

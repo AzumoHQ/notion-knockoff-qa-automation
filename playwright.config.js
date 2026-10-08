@@ -9,6 +9,7 @@ const { BASE_URL, bypassHeaders } = await import('./utils/target.js');
 export default defineConfig({
   testDir: './tests',
   globalSetup: './auth/global-setup.js',
+  globalTeardown: './auth/global-teardown.js',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 1,
@@ -30,7 +31,16 @@ export default defineConfig({
     actionTimeout: 10_000,
     navigationTimeout: 30_000,
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] }, testIgnore: /logout\.spec\.js/ },
+    // Logging out may revoke the shared session server-side, so it runs last, after every other test.
+    {
+      name: 'logout',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: /logout\.spec\.js/,
+      dependencies: ['chromium'],
+    },
+  ],
   outputDir: 'test-results',
   timeout: 60_000,
 });
