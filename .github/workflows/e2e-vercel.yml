@@ -1,0 +1,126 @@
+name: E2E (Vercel deployments)
+
+# Fired by the app repo on every successful Vercel deployment (see docs/app-repo-trigger.yml),
+# or manually with an optional BASE_URL.
+on:
+  repository_dispatch:
+    types: [vercel-deployment]
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'URL under test (default: production)'
+        required: false
+        default: 'https://notion-knockoff-mvp.vercel.app'
+
+# Tests share one account on the target app, so runs must never overlap.
+concurrency:
+  group: e2e-vercel
+  cancel-in-progress: false
+
+permissions:
+  contents: write # publish the Allure report to the gh-pages branch
+
+env:
+  # Passed through env (never interpolated into scripts) to avoid injection from the dispatch payload.
+  TARGET_URL: ${{ github.event.client_payload.url || inputs.base_url || 'https://notion-knockoff-mvp.vercel.app' }}
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Validate target URL
+        run: |
+          case "$TARGET_URL" in
+            https://*.vercel.app|https://*.vercel.app/) echo "Target: $TARGET_URL" ;;
+            *) echo "::error::BASE_URL must be an https://*.vercel.app URL"; exit 1 ;;
+          esac
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4 # Allure CLI needs a JRE
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        id: tests
+        continue-on-error: true
+        env:
+          CI: 'true'
+          BASE_URL: ${{ env.TARGET_URL }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          TEST_USER_USERNAME: ${{ secrets.TEST_USER_USERNAME }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+        run: npx playwright test
+
+      - name: Analyst (diagnosis + flaky detection)
+        if: always()
+        run: node analyst/run-analyst.js || true
+
+      - name: Restore Allure history from gh-pages
+        if: always()
+        uses: actions/checkout@v4
+        continue-on-error: true # first run: the branch does not exist yet
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Build Allure report with history
+        if: always()
+        run: |
+          if [ -d gh-pages/latest/history ]; then cp -r gh-pages/latest/history allure-results/history; fi
+          npx allure generate allure-results --clean -o allure-report
+
+      - name: Publish report to GitHub Pages (per-run folder + latest)
+        if: always()
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          mkdir -p gh-pages
+          cd gh-pages
+          if [ ! -d .git ]; then
+            git init -q -b gh-pages
+            git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -rf "$RUN_NUMBER" latest
+          mkdir -p "$RUN_NUMBER" latest
+          cp -r ../allure-report/. "$RUN_NUMBER"/
+          cp -r ../allure-report/. latest/
+          # retention: keep the newest 30 run folders
+          ls -1 | grep -E '^[0-9]+$' | sort -n | head -n -30 | xargs -r rm -rf
+          { echo '<!doctype html><meta charset="utf-8"><title>Notion Knockoff QA reports</title><h1>Notion Knockoff QA reports</h1><ul><li><a href="latest/">latest</a></li>';
+            for d in $(ls -1 | grep -E '^[0-9]+$' | sort -rn); do echo "<li><a href=\"$d/\">run $d</a></li>"; done; echo '</ul>'; } > index.html
+          git add -A
+          git commit -q -m "Allure report for run $RUN_NUMBER ($RUN_URL)" || exit 0
+          git push -q origin HEAD:gh-pages
+
+      - name: Upload raw results on failure
+        if: steps.tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: |
+            test-results/
+            playwright-report/
+            analyst-report.json
+          retention-days: 14
+
+      - name: Report URL
+        if: always()
+        run: echo "Allure report: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/latest/" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail the job if the tests failed
+        if: steps.tests.outcome == 'failure'
+        run: exit 1

@@ -1,0 +1,24 @@
+# Copy into the APP repo as .github/workflows/trigger-e2e.yml
+# Fires the E2E suite in AzumoHQ/notion-knockoff-qa-automation after each successful Vercel deployment.
+#
+# Setup (once, in the app repo): add a secret QA_DISPATCH_TOKEN — a fine-grained PAT with
+# "Contents: Read and write" on AzumoHQ/notion-knockoff-qa-automation (repository_dispatch needs it).
+name: Trigger E2E
+
+on:
+  deployment_status:
+
+jobs:
+  trigger:
+    if: github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch E2E run
+        env:
+          GH_TOKEN: ${{ secrets.QA_DISPATCH_TOKEN }}
+          DEPLOY_URL: ${{ github.event.deployment_status.environment_url }}
+        run: |
+          gh api repos/AzumoHQ/notion-knockoff-qa-automation/dispatches \
+            -f event_type=vercel-deployment \
+            -f "client_payload[url]=$DEPLOY_URL" \
+            -f "client_payload[sha]=${{ github.sha }}"
