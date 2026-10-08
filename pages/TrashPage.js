@@ -4,7 +4,8 @@ export class TrashPage extends BasePage {
   constructor(page, writes) {
     super(page);
     this.writes = writes;
-    this.heading = page.getByRole('heading', { name: 'Papelera' });
+    // the heading is rendered twice (page header + topbar), so take the first
+    this.heading = page.getByRole('heading', { name: 'Papelera' }).first();
     this.empty = page.getByText('La papelera está vacía');
     this.confirmDialog = page.getByRole('alertdialog');
   }

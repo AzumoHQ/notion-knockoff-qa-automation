@@ -41,14 +41,23 @@ export class PageEditor extends BasePage {
     return this.blocks.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
   }
 
-  /** The confirm dialog can re-mount while sidebar data refreshes, so retry the whole open→confirm sequence. */
+  /**
+   * Archives the open page. After a successful archive the app either navigates away from the page
+   * URL or stays on it showing the "Esta página está archivada" panel — both count as success.
+   * The confirm dialog can re-mount while that happens (the click may even report a failure although
+   * the archive went through), so each retry first checks whether the page is already archived.
+   */
   async archive() {
+    const pageUrl = this.page.url();
+    const archivedPanel = this.page.getByText('Esta página está archivada');
+    const isArchived = async () => this.page.url() !== pageUrl || (await archivedPanel.isVisible());
+
     await expect(async () => {
-      if (!/\/p\//.test(this.page.url())) return; // already archived and redirected
+      if (await isArchived()) return;
       if (!(await this.confirmDialog.isVisible())) await this.archiveButton.click({ timeout: 3_000 });
       await this.confirmDialog.getByRole('button', { name: 'Archivar', exact: true }).click({ timeout: 3_000 });
-      await this.confirmDialog.waitFor({ state: 'hidden', timeout: 3_000 });
     }).toPass({ timeout: 25_000 });
+    await expect.poll(isArchived, { message: 'page was not archived', timeout: 20_000 }).toBe(true);
     await this.writes.settled(500);
   }
 }

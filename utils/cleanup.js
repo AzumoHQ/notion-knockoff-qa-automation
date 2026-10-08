@@ -21,7 +21,7 @@ export async function removePages(workspace, matcher) {
     await page.waitForURL(/\/p\//);
     await workspace.editor.waitForLoaded();
     await workspace.editor.archive();
-    await page.waitForURL(/\/w\/[^/]+$/);
+    await workspace.open(); // fresh sidebar: it may still list the page we just archived
   }
 
   await workspace.openTrash();
