@@ -1,0 +1,23 @@
+{
+  "name": "notion-knockoff-qa-automation",
+  "version": "1.0.0",
+  "description": "E2E automation for the Notion-clone workspace app (Playwright + POM + Allure), built from the AI-Driven Automation Framework template.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "npm install && npx playwright install --with-deps",
+    "test": "rm -rf allure-results && npx playwright test --project=chromium && npm run allure",
+    "test:smoke": "rm -rf allure-results && npx playwright test --project=chromium tests/smoke-tests && npx allure generate allure-results --clean -o allure-report",
+    "test:regression": "rm -rf allure-results && npx playwright test --project=chromium tests/regression && npx allure generate allure-results --clean -o allure-report",
+    "test:headed": "npx playwright test --headed",
+    "test:debug": "npx playwright test --debug",
+    "test:ui": "npx playwright test --ui",
+    "allure": "npx allure generate allure-results --clean -o allure-report && npx allure open allure-report --port 3030"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0",
+    "allure-commandline": "^2.46.1",
+    "allure-playwright": "^3.13.0",
+    "dotenv": "^18.0.6"
+  }
+}
