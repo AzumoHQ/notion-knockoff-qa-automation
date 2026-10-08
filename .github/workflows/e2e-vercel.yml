@@ -3,6 +3,8 @@ name: E2E (Vercel deployments)
 # Fired by the app repo on every successful Vercel deployment (see docs/app-repo-trigger.yml),
 # or manually with an optional BASE_URL.
 on:
+  schedule:
+    - cron: '0 10 * * *' # 07:00 Argentina (UTC-3, no DST) — runs against production
   repository_dispatch:
     types: [vercel-deployment]
   workflow_dispatch:
