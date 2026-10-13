@@ -1,0 +1,23 @@
+name: Checks
+
+# Needs no secrets and no access to the application: structure only. Safe for pull requests from forks.
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  structure:
+    name: Config, catalog and test list
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - run: npm ci
+      - run: npm run doctor
+      - run: npm run catalog

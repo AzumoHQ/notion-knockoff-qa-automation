@@ -4,7 +4,7 @@ test.describe('Smoke @smoke', () => {
   test.describe('anonymous visitor', () => {
     test.use({ storageState: { cookies: [], origins: [] } });
 
-    test('home hydrates and shows the login screen', async ({ page, loginPage }) => {
+    test('TC0001 - home hydrates and shows the login screen', async ({ page, loginPage }) => {
       await loginPage.goto();
       await loginPage.waitForHydration();
 
@@ -15,7 +15,7 @@ test.describe('Smoke @smoke', () => {
     });
   });
 
-  test('authenticated session lands on the workspace', async ({ page }) => {
+  test('TC0002 - authenticated session lands on the workspace', async ({ page }) => {
     await page.goto('/');
     await page.waitForURL(/\/w\//);
 

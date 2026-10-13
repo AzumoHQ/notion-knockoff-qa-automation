@@ -1,7 +1,7 @@
 import { test, expect } from '../../fixtures/base.fixture.js';
 
 test.describe('Page content: text, headings, lists @regression', () => {
-  test('text, heading and list blocks keep their type, text and order after a reload', async ({ page, workspace, pageFactory }) => {
+  test('TC0016 - text, heading and list blocks keep their type, text and order after a reload', async ({ page, workspace, pageFactory }) => {
     await pageFactory.create('content');
     const { editor } = workspace;
 
@@ -22,7 +22,7 @@ test.describe('Page content: text, headings, lists @regression', () => {
     expect(await editor.blockTypes()).toEqual(['Texto', 'Título 1', 'Lista con viñetas', 'Texto']);
   });
 
-  test('editing an existing block replaces its text and the new text persists', async ({ page, workspace, pageFactory }) => {
+  test('TC0017 - editing an existing block replaces its text and the new text persists', async ({ page, workspace, pageFactory }) => {
     await pageFactory.create('edit-block');
     const { editor } = workspace;
     await editor.addBlock('texto original');
@@ -38,7 +38,7 @@ test.describe('Page content: text, headings, lists @regression', () => {
     expect(await editor.blockValues()).not.toContain('texto original');
   });
 
-  test('pressing Enter in a block creates a new block below and both persist', async ({ page, workspace, pageFactory }) => {
+  test('TC0018 - pressing Enter in a block creates a new block below and both persist', async ({ page, workspace, pageFactory }) => {
     await pageFactory.create('enter-key');
     const { editor } = workspace;
     await editor.addBlock('linea uno');

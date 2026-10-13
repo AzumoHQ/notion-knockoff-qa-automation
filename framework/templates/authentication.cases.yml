@@ -1,0 +1,48 @@
+area: Authentication
+feature: Login
+cases:
+  - id: TC0001
+    title: Login screen asks for credentials
+    priority: high
+    preconditions:
+      - No saved session
+    steps:
+      - Open the application root URL
+    expected:
+      - A password field is visible
+    spec: tests/smoke-tests/auth.spec.js
+  - id: TC0002
+    title: Invalid credentials are rejected and the user stays on login
+    priority: high
+    preconditions:
+      - No saved session
+    steps:
+      - Open the application root URL
+      - Enter the QA username and a wrong password
+      - Submit the form
+    expected:
+      - The user does not get in
+      - The password field is still visible
+    spec: tests/smoke-tests/auth.spec.js
+  - id: TC0003
+    title: Valid credentials leave the login screen
+    priority: high
+    preconditions:
+      - No saved session
+    steps:
+      - Open the application root URL
+      - Enter the QA username and password
+      - Submit the form
+    expected:
+      - The password field disappears
+    spec: tests/smoke-tests/auth.spec.js
+  - id: TC0004
+    title: The saved session opens the app without the login screen
+    priority: medium
+    preconditions:
+      - The default profile storage state exists
+    steps:
+      - Open the application root URL with the saved session
+    expected:
+      - The password field is not shown
+    spec: tests/smoke-tests/auth.spec.js

@@ -62,11 +62,24 @@ jobs:
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
           TEST_USER_USERNAME: ${{ secrets.TEST_USER_USERNAME }}
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+          # API tests (tests/api) are skipped while SUPABASE_ANON_KEY or API_BASE_URL is not set
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
         run: npx playwright test
 
       - name: Analyst (diagnosis + flaky detection)
         if: always()
         run: node analyst/run-analyst.js || true
+
+      - name: Build TCM page (test case catalog)
+        if: always()
+        continue-on-error: true # the catalog never blocks the report
+        run: |
+          node framework/bin/qa.mjs catalog
+          mkdir -p .qa-out/tcm-site
+          cp framework/tcm/index.html framework/tcm/app.js framework/tcm/model.js framework/tcm/tcm.css .qa-out/tcm-site/
+          cp .qa-out/catalog.json .qa-out/tcm-site/catalog.json
+          echo '{"app":"Notion Knockoff","latest":{"e2e":"../latest/"}}' > .qa-out/tcm-site/site.json
 
       - name: Restore Allure history from gh-pages
         if: always()
@@ -100,9 +113,10 @@ jobs:
           mkdir -p "$RUN_NUMBER" latest
           cp -r ../allure-report/. "$RUN_NUMBER"/
           cp -r ../allure-report/. latest/
+          if [ -d ../.qa-out/tcm-site ]; then rm -rf tcm && cp -r ../.qa-out/tcm-site tcm; fi
           # retention: keep the newest 30 run folders
           ls -1 | grep -E '^[0-9]+$' | sort -n | head -n -30 | xargs -r rm -rf
-          { echo '<!doctype html><meta charset="utf-8"><title>Notion Knockoff QA reports</title><h1>Notion Knockoff QA reports</h1><ul><li><a href="latest/">latest</a></li>';
+          { echo '<!doctype html><meta charset="utf-8"><title>Notion Knockoff QA reports</title><h1>Notion Knockoff QA reports</h1><ul><li><a href="latest/">latest</a></li><li><a href="tcm/">test cases (TCM)</a></li>';
             for d in $(ls -1 | grep -E '^[0-9]+$' | sort -rn); do echo "<li><a href=\"$d/\">run $d</a></li>"; done; echo '</ul>'; } > index.html
           git add -A
           git commit -q -m "Allure report for run $RUN_NUMBER ($RUN_URL)" || exit 0

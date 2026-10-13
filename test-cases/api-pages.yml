@@ -1,0 +1,91 @@
+area: API
+feature: Pages (Supabase PostgREST)
+cases:
+  - id: TC0019
+    title: Anonymous requests cannot read pages
+    priority: high
+    type: api
+    automation: automated
+    preconditions:
+      - No bearer token, only the public apikey
+    steps:
+      - GET /rest/v1/pages?select=id&limit=1
+    expected:
+      - The response status is 401
+    spec: tests/api/pages.spec.js
+  - id: TC0020
+    title: A created page is returned with its title, workspace and no parent
+    priority: high
+    type: api
+    automation: automated
+    preconditions:
+      - Signed in as the QA owner (default profile)
+      - A page named qa-auto-<time> exists in the owner's default workspace (created through the API)
+    steps:
+      - GET /rest/v1/pages?id=eq.<id>
+    expected:
+      - One row with the title, the workspace id, parent_id null and archived_at null
+    spec: tests/api/pages.spec.js
+  - id: TC0021
+    title: The title can be updated with a PATCH
+    priority: medium
+    type: api
+    automation: automated
+    preconditions:
+      - Signed in as the QA owner (default profile)
+      - A page named qa-auto-<time> exists in the owner's default workspace (created through the API)
+    steps:
+      - PATCH /rest/v1/pages?id=eq.<id> with a new title
+      - GET the page
+    expected:
+      - The status is 200 and the page has the new title
+    spec: tests/api/pages.spec.js
+  - id: TC0022
+    title: A direct DELETE on the table is not permitted
+    priority: medium
+    type: api
+    automation: automated
+    preconditions:
+      - Signed in as the QA owner (default profile)
+      - A page named qa-auto-<time> exists in the owner's default workspace (created through the API)
+    steps:
+      - DELETE /rest/v1/pages?id=eq.<id>
+      - GET the page
+    expected:
+      - The status is 403
+      - The page still exists
+    spec: tests/api/pages.spec.js
+  - id: TC0023
+    title: archive_page marks the page archived and hides it from search
+    priority: high
+    type: api
+    automation: automated
+    preconditions:
+      - Signed in as the QA owner (default profile)
+      - A page named qa-auto-<time> exists in the owner's default workspace (created through the API)
+    steps:
+      - POST rpc/search_pages with the title
+      - POST rpc/archive_page
+      - GET the page
+      - POST rpc/search_pages again
+    expected:
+      - The page is found before archiving
+      - archive_page answers 204 and archived_at is set
+      - The page is not found afterwards
+    spec: tests/api/pages.spec.js
+  - id: TC0024
+    title: delete_page_permanently removes an archived page
+    priority: high
+    type: api
+    automation: automated
+    preconditions:
+      - Signed in as the QA owner (default profile)
+      - A page named qa-auto-<time> exists in the owner's default workspace (created through the API)
+    steps:
+      - POST rpc/archive_page
+      - POST rpc/delete_page_permanently
+      - GET the page
+    expected:
+      - The delete call succeeds
+      - The page query returns no rows
+    spec: tests/api/pages.spec.js

@@ -1,0 +1,64 @@
+name: {{NAME}}
+
+on:
+{{TRIGGERS}}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: {{CONCURRENCY}}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Run {{NAME}}
+    runs-on: ubuntu-latest
+    timeout-minutes: {{TIMEOUT}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+{{SWEEP}}{{SELECT}}      - name: Run tests
+        id: run
+        continue-on-error: true
+        run: |
+          rm -rf allure-results playwright-report
+          npx playwright test --project={{PROJECT}} {{DIR}} --grep "${TEST_GREP:-.*}"
+        env:
+          TEST_GREP: {{GREP_EXPR}}
+          ENV: ci
+          TCM_BASE_URL: ${{ vars.TCM_BASE_URL }}
+{{SECRET_ENV}}
+{{AFTER_RUN}}      - name: Prepare the publishable report
+        if: always() && hashFiles('allure-results/*') != ''
+        run: npm run qa -- publish-prepare --suite {{SUITE}}
+        env:
+          QA_PUBLISH_SCREENSHOTS: {{SCREENSHOTS}}
+{{SECRET_ENV}}
+{{NOTIFY}}      - name: Upload the publishable report
+        if: always() && hashFiles('qa-publish/meta.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-run-{{SUITE}}
+          path: qa-publish/
+          retention-days: {{RETENTION}}
+      - name: Generate the full Allure report
+        if: always() && {{RAW_IF}} && hashFiles('allure-results/*') != ''
+        run: npx allure generate allure-results --clean -o allure-report
+      - name: Upload the full reports and traces
+        if: always() && {{RAW_IF}}
+        uses: actions/upload-artifact@v4
+        with:
+          name: {{SUITE}}-full-reports
+          path: |
+            playwright-report/
+            allure-report/
+            test-results/
+          retention-days: {{RETENTION}}
+          if-no-files-found: ignore
+      - name: Keep the job red when tests failed
+        if: steps.run.outcome == 'failure'
+        run: exit 1

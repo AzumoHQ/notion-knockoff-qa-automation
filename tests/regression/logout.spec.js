@@ -5,7 +5,7 @@ import { test, expect } from '../../fixtures/base.fixture.js';
 test.describe('Logout @regression', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test('logging out returns to the login screen and the session is gone after a reload', async ({ page, loginPage, workspace }) => {
+  test('TC0006 - logging out returns to the login screen and the session is gone after a reload', async ({ page, loginPage, workspace }) => {
     await loginPage.goto();
     await loginPage.waitForHydration();
     await loginPage.login(process.env.TEST_USER_USERNAME, process.env.TEST_USER_PASSWORD);

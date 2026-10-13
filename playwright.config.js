@@ -32,7 +32,7 @@ export default defineConfig({
     navigationTimeout: 30_000,
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] }, testIgnore: /logout\.spec\.js/ },
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] }, testIgnore: [/logout\.spec\.js/, '**/api/**'] },
     // Logging out may revoke the shared session server-side, so it runs last, after every other test.
     {
       name: 'logout',
@@ -40,6 +40,8 @@ export default defineConfig({
       testMatch: /logout\.spec\.js/,
       dependencies: ['chromium'],
     },
+    // API suite (no browser): run with --project=api. It reuses the saved login only to read the session token.
+    { name: 'api', testMatch: '**/api/**/*.spec.js' },
   ],
   outputDir: 'test-results',
   timeout: 60_000,

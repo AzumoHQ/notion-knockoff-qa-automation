@@ -1,7 +1,7 @@
 import { test, expect } from '../../fixtures/base.fixture.js';
 
 test.describe('Delete flow: archive, restore, delete permanently @regression', () => {
-  test('archiving removes the page from the sidebar and moves it to the trash, also after a reload', async ({ page, workspace, pageFactory }) => {
+  test('TC0010 - archiving removes the page from the sidebar and moves it to the trash, also after a reload', async ({ page, workspace, pageFactory }) => {
     const title = await pageFactory.create('archive');
 
     await workspace.editor.archive();
@@ -16,7 +16,7 @@ test.describe('Delete flow: archive, restore, delete permanently @regression', (
     await expect(workspace.sidebarLink(title)).toHaveCount(0);
   });
 
-  test('restoring an archived page brings it back with its content', async ({ page, workspace, pageFactory }) => {
+  test('TC0011 - restoring an archived page brings it back with its content', async ({ page, workspace, pageFactory }) => {
     const title = await pageFactory.create('restore');
     await workspace.editor.addBlock('contenido que debe sobrevivir');
     await workspace.editor.archive();
@@ -32,7 +32,7 @@ test.describe('Delete flow: archive, restore, delete permanently @regression', (
     await expect(workspace.editor.blocks.first()).toHaveValue('contenido que debe sobrevivir');
   });
 
-  test('deleting permanently removes the page everywhere and it stays gone after a reload', async ({ page, workspace, pageFactory }) => {
+  test('TC0012 - deleting permanently removes the page everywhere and it stays gone after a reload', async ({ page, workspace, pageFactory }) => {
     const title = await pageFactory.create('delete-forever');
     const pageUrl = page.url();
     await workspace.editor.archive();

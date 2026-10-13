@@ -1,0 +1,34 @@
+<!--
+AS-IS sections — copy verbatim from the source project's CLAUDE.md, these are 100% app-agnostic:
+"Testing philosophy — SDET-grade standards" (the 7 ISTQB principles), "Test techniques",
+"Single responsibility", "Test naming conventions", "Test type placement".
+-->
+
+# {{App Name}} Test Automation — Claude Context
+
+## Project purpose
+
+{{rewrite from scratch}}
+
+## Stack
+
+{{rewrite only if it differs from the default: TS vs JS, another reporter, etc.}}
+
+<!-- AS-IS sections go here: Testing philosophy — SDET-grade standards, Test techniques,
+     Single responsibility, Test naming conventions, Test type placement -->
+
+## App: {{APP_NAME}}
+
+- URL:
+- Auth:
+- Key pages:
+- Gotchas: (fill in only after step 6 — MCP-guided exploration)
+
+## Test inventory
+
+Last TC: TC000N (N tests total)
+- {{short per-file list}}
+
+<!-- Split into a standalone TEST_INVENTORY.md only once this crosses ~30-40 tests or the
+     per-test gotchas start crowding out the rest of this file. When split, shrink this section to:
+     Last TC: **TC0XXX** (N tests total). Full per-test notes → [TEST_INVENTORY.md](TEST_INVENTORY.md). -->

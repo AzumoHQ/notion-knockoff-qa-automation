@@ -1,0 +1,85 @@
+area: Authentication
+feature: Login and session
+cases:
+  - id: TC0001
+    title: "The login screen is shown to an anonymous visitor"
+    priority: high
+    type: ui
+    automation: automated
+    preconditions:
+      - "Not signed in"
+    steps:
+      - "Open the app"
+    expected:
+      - "The page title is \"Workspace\""
+      - "Username, password and Google sign-in are visible"
+    spec: tests/smoke-tests/smoke.spec.js
+  - id: TC0002
+    title: "A signed-in session lands on the workspace"
+    priority: high
+    type: ui
+    automation: automated
+    preconditions:
+      - "Signed in as the QA user (default profile)"
+    steps:
+      - "Open the app"
+    expected:
+      - "The URL is a workspace URL"
+      - "New page and Sign out buttons are visible"
+      - "The login form is not shown"
+    spec: tests/smoke-tests/smoke.spec.js
+  - id: TC0003
+    title: "Valid credentials land on the workspace and the session survives a reload"
+    priority: high
+    type: ui
+    automation: automated
+    preconditions:
+      - "Not signed in"
+    steps:
+      - "Sign in with the QA user"
+      - "Reload the page"
+    expected:
+      - "The workspace is shown"
+      - "After the reload the workspace is still shown"
+    spec: tests/regression/auth.spec.js
+  - id: TC0004
+    title: "Wrong credentials show an error and keep the visitor out"
+    priority: high
+    type: ui
+    automation: automated
+    preconditions:
+      - "Not signed in"
+    steps:
+      - "Sign in with a user that does not exist"
+    expected:
+      - "The error \"Usuario o contraseña incorrectos.\" is shown"
+      - "The visitor stays out of the workspace"
+    spec: tests/regression/auth.spec.js
+  - id: TC0005
+    title: "A protected workspace URL redirects an anonymous visitor to the login screen"
+    priority: high
+    type: ui
+    automation: automated
+    preconditions:
+      - "Not signed in"
+    steps:
+      - "Open a workspace URL directly"
+    expected:
+      - "The visitor is sent to the login screen"
+    spec: tests/regression/auth.spec.js
+  - id: TC0006
+    title: "Logging out returns to the login screen and the session is gone after a reload"
+    priority: medium
+    type: ui
+    automation: automated
+    preconditions:
+      - "Not signed in"
+    steps:
+      - "Sign in"
+      - "Click Sign out"
+      - "Reload"
+      - "Open a workspace URL"
+    expected:
+      - "The login screen is shown"
+      - "The session is gone after the reload and the workspace URL is protected"
+    spec: tests/regression/logout.spec.js

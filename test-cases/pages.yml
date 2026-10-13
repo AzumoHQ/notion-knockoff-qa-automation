@@ -1,0 +1,177 @@
+area: Workspace
+feature: Pages, trash and search
+cases:
+  - id: TC0007
+    title: "A new page is created, listed in the sidebar and survives a reload"
+    priority: high
+    type: ui
+    automation: automated
+    preconditions:
+      - "Signed in as the QA user (default profile)"
+    steps:
+      - "Create a page and give it a title"
+      - "Reload"
+    expected:
+      - "The page is listed in the sidebar"
+      - "The same URL and title are shown after the reload"
+    spec: tests/regression/pages-crud.spec.js
+  - id: TC0008
+    title: "Renaming a page updates the sidebar and is still there after a reload"
+    priority: medium
+    type: ui
+    automation: automated
+    preconditions:
+      - "Signed in as the QA user (default profile)"
+      - "A page exists"
+    steps:
+      - "Rename the page"
+      - "Reload"
+    expected:
+      - "The sidebar shows the new title and not the old one, also after the reload"
+    spec: tests/regression/pages-crud.spec.js
+  - id: TC0009
+    title: "A page created without a title is listed as \"Sin título\""
+    priority: low
+    type: ui
+    automation: automated
+    preconditions:
+      - "Signed in as the QA user (default profile)"
+    steps:
+      - "Create a page and leave the title empty"
+    expected:
+      - "The title field shows the \"Sin título\" placeholder"
+      - "The sidebar lists \"Sin título\""
+    spec: tests/regression/pages-crud.spec.js
+  - id: TC0010
+    title: "Archiving a page moves it to the trash, also after a reload"
+    priority: high
+    type: ui
+    automation: automated
+    preconditions:
+      - "Signed in as the QA user (default profile)"
+      - "A page exists"
+    steps:
+      - "Archive the page"
+      - "Open the trash"
+      - "Reload"
+    expected:
+      - "The page leaves the sidebar"
+      - "The page is in the trash, also after the reload"
+    spec: tests/regression/archive-trash.spec.js
+  - id: TC0011
+    title: "Restoring an archived page brings it back with its content"
+    priority: high
+    type: ui
+    automation: automated
+    preconditions:
+      - "Signed in as the QA user (default profile)"
+      - "An archived page with a text block"
+    steps:
+      - "Restore the page from the trash"
+      - "Reload and open the page"
+    expected:
+      - "The page is back in the sidebar with its text"
+    spec: tests/regression/archive-trash.spec.js
+  - id: TC0012
+    title: "Deleting a page permanently removes it everywhere"
+    priority: high
+    type: ui
+    automation: automated
+    preconditions:
+      - "Signed in as the QA user (default profile)"
+      - "An archived page"
+    steps:
+      - "Delete it permanently from the trash"
+      - "Reload"
+      - "Open its old URL"
+    expected:
+      - "The page is not in the trash or the sidebar"
+      - "The old URL does not show the page"
+    spec: tests/regression/archive-trash.spec.js
+  - id: TC0013
+    title: "Sidebar entries switch between pages and show each page's own content"
+    priority: medium
+    type: ui
+    automation: automated
+    preconditions:
+      - "Signed in as the QA user (default profile)"
+      - "Two pages with different text"
+    steps:
+      - "Click each page in the sidebar"
+      - "Reload"
+    expected:
+      - "Each page shows its own title and text"
+      - "A reload lands on the same page"
+    spec: tests/regression/navigation.spec.js
+  - id: TC0014
+    title: "A sub-page is created under its parent and persists nested"
+    priority: medium
+    type: ui
+    automation: automated
+    preconditions:
+      - "Signed in as the QA user (default profile)"
+      - "A page exists"
+    steps:
+      - "Add a sub-page to the page and title it"
+      - "Reload"
+    expected:
+      - "The sub-page is listed under its parent"
+    spec: tests/regression/navigation.spec.js
+  - id: TC0015
+    title: "Search finds a page by title and by block content"
+    priority: medium
+    type: ui
+    automation: automated
+    preconditions:
+      - "Signed in as the QA user (default profile)"
+      - "A page with a unique text"
+    steps:
+      - "Search by title"
+      - "Search by the text"
+      - "Search by a text that does not exist"
+    expected:
+      - "The page is found by title and by text"
+      - "It is not found for the missing text"
+    spec: tests/regression/navigation.spec.js
+  - id: TC0016
+    title: "Text, heading and list blocks keep their type, text and order after a reload"
+    priority: high
+    type: ui
+    automation: automated
+    preconditions:
+      - "Signed in as the QA user (default profile)"
+      - "An empty page"
+    steps:
+      - "Add a text, a heading (\"# \") and a bullet (\"- \") block"
+      - "Reload"
+    expected:
+      - "The block types, texts and order are the same after the reload"
+    spec: tests/regression/edit-content.spec.js
+  - id: TC0017
+    title: "Editing an existing block replaces its text and the new text persists"
+    priority: medium
+    type: ui
+    automation: automated
+    preconditions:
+      - "Signed in as the QA user (default profile)"
+      - "A page with one text block"
+    steps:
+      - "Replace the text"
+      - "Reload"
+    expected:
+      - "Only the new text is shown after the reload"
+    spec: tests/regression/edit-content.spec.js
+  - id: TC0018
+    title: "Pressing Enter in a block creates a new block below and both persist"
+    priority: medium
+    type: ui
+    automation: automated
+    preconditions:
+      - "Signed in as the QA user (default profile)"
+      - "A page with one text block"
+    steps:
+      - "Press Enter and type a second line"
+      - "Reload"
+    expected:
+      - "Both blocks are there, in order, after the reload"
+    spec: tests/regression/edit-content.spec.js

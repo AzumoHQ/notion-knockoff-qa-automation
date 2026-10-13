@@ -1,0 +1,89 @@
+name: Publish reports
+
+# Runs after every test workflow (also when its tests failed), once a day to expire old reports, and on demand.
+# Reports live on the `qa-reports` branch (one folder per run, kept {{RETENTION}} days) and the whole branch is
+# deployed to GitHub Pages together with the test case catalog. Test workflows themselves stay read-only.
+on:
+  workflow_run:
+    workflows: [{{WORKFLOW_NAMES}}]
+    types: [completed]
+  workflow_dispatch:
+  schedule:
+    - cron: '30 3 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  store:
+    name: Store reports and expire old ones
+    # Only runs of the default branch, never pull requests: their content is not trusted with write access.
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.event != 'pull_request' && github.event.workflow_run.head_branch == github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - run: npm ci
+      - name: Download the run's publishable report
+        if: github.event_name == 'workflow_run'
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: site-run-*
+          path: qa-incoming
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+      - name: Build the test case catalog
+        run: npm run qa -- catalog
+      - name: Publish to the reports branch
+        run: npm run qa -- site-publish --incoming qa-incoming ${{ github.event_name != 'workflow_run' && '--squash' || '' }}
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: store
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    # Queued, never cancelled mid-deploy. A newer deploy always rebuilds from the whole branch, so skipped
+    # intermediate deploys lose nothing: every run is already stored.
+    concurrency:
+      group: pages-deploy
+      cancel-in-progress: false
+    steps:
+      # Without Pages (private repository on a plan that lacks it, or not enabled yet) the reports still reach the
+      # `qa-reports` branch; the deploy is skipped with a notice instead of turning every run red.
+      - name: Check that GitHub Pages is enabled
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/${{ github.repository }}/pages" --silent 2>/dev/null; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=GitHub Pages is not enabled::Reports were stored on the qa-reports branch but not deployed. Enable Settings > Pages > Source: GitHub Actions (private repositories need a paid plan)."
+          fi
+      - uses: actions/checkout@v4
+        if: steps.pages.outputs.enabled == 'true'
+        with:
+          ref: qa-reports
+      - uses: actions/configure-pages@v5
+        if: steps.pages.outputs.enabled == 'true'
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.pages.outputs.enabled == 'true'
+        with:
+          path: .
+      - id: deployment
+        if: steps.pages.outputs.enabled == 'true'
+        uses: actions/deploy-pages@v4

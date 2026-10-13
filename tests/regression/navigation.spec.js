@@ -1,7 +1,7 @@
 import { test, expect } from '../../fixtures/base.fixture.js';
 
 test.describe('Navigation and search @regression', () => {
-  test('clicking sidebar entries switches between pages and shows each page\'s own content', async ({ page, workspace, pageFactory }) => {
+  test('TC0013 - clicking sidebar entries switches between pages and shows each page\'s own content', async ({ page, workspace, pageFactory }) => {
     const first = await pageFactory.create('nav-a');
     await workspace.editor.addBlock('contenido de A');
     const second = await pageFactory.create('nav-b');
@@ -21,7 +21,7 @@ test.describe('Navigation and search @regression', () => {
     await expect(workspace.editor.title).toHaveValue(second);
   });
 
-  test('a sub-page is created under its parent and persists nested', async ({ page, workspace, pageFactory }) => {
+  test('TC0014 - a sub-page is created under its parent and persists nested', async ({ page, workspace, pageFactory }) => {
     const parent = await pageFactory.create('parent');
     const parentUrl = page.url();
     await page.getByRole('button', { name: `Agregar subpágina en ${parent}` }).first().click();
@@ -43,7 +43,7 @@ test.describe('Navigation and search @regression', () => {
     await expect(workspace.sidebarLink(child)).toBeVisible();
   });
 
-  test('search finds a page by title and by block content', async ({ workspace, pageFactory }) => {
+  test('TC0015 - search finds a page by title and by block content', async ({ workspace, pageFactory }) => {
     const title = await pageFactory.create('search');
     const needle = `needle${title.slice(-6)}`;
     await workspace.editor.addBlock(`el secreto es ${needle}`);

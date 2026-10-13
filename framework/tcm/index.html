@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Test Case Manager</title>
+  <link rel="stylesheet" href="tcm.css">
+</head>
+<body>
+  <header>
+    <h1 id="title">Test Case Manager</h1>
+    <span id="meta"></span>
+  </header>
+  <div class="layout">
+    <nav id="tree" aria-label="Areas and features"></nav>
+    <main>
+      <div id="toolbar">
+        <input id="search" type="search" placeholder="Search by ID, title, steps..." aria-label="Search cases">
+        <select id="f-type" aria-label="Type"><option value="">Any type</option></select>
+        <select id="f-priority" aria-label="Priority"><option value="">Any priority</option></select>
+        <select id="f-automation" aria-label="Automation"><option value="">Any automation</option></select>
+      </div>
+      <section id="content"></section>
+    </main>
+  </div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

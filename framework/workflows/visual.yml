@@ -1,0 +1,92 @@
+name: Visual Tests
+
+# Screenshot comparison with Playwright. Baselines are PNG files committed next to the tests, one set per platform;
+# the ones that count are generated on Linux (the CI runner) so fonts and rendering match.
+# To accept intended changes run this workflow with update_baselines: it pushes the new images to the branch
+# qa/update-visual-baselines. Open a pull request from it and review the images like code.
+on:
+  workflow_dispatch:
+    inputs:
+      update_baselines:
+        description: 'Regenerate baselines and push them to qa/update-visual-baselines'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: visual-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  visual:
+    name: Run Visual Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Run visual tests
+        id: run
+        continue-on-error: true
+        run: npx playwright test --project=chromium --grep @visual ${UPDATE}
+        env:
+          UPDATE: ${{ inputs.update_baselines && '--update-snapshots' || '' }}
+          VISUAL: '1'
+          ENV: ci
+{{SECRET_ENV}}
+      - name: Upload the visual diffs
+        if: always() && {{RAW_IF}}
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diffs
+          path: test-results/
+          retention-days: {{RETENTION}}
+          if-no-files-found: ignore
+      - name: Pack the updated baselines
+        if: inputs.update_baselines
+        run: |
+          git add -A -- '*__screenshots__*' || true  # no match: no visual test wrote a baseline
+          if git diff --cached --quiet; then echo "No baseline changed"; else git diff --cached --name-only -z | tar --null -T - -czf baselines.tgz; fi
+      - name: Keep the updated baselines
+        if: inputs.update_baselines && hashFiles('baselines.tgz') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-baselines
+          path: baselines.tgz
+          retention-days: 1
+      - name: Keep the job red when tests failed
+        if: steps.run.outcome == 'failure' && !inputs.update_baselines
+        run: exit 1
+
+  push-baselines:
+    name: Push the updated baselines
+    # Only this job can write to the repository, and it runs nothing from the tests: it unpacks images and commits them.
+    needs: visual
+    if: inputs.update_baselines && !cancelled()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        id: download
+        continue-on-error: true
+        with:
+          name: visual-baselines
+      - name: Commit the baselines to a review branch
+        if: steps.download.outcome == 'success'
+        run: |
+          tar -xzf baselines.tgz && rm baselines.tgz
+          git config user.name qa-framework
+          git config user.email qa-framework@users.noreply.github.com
+          git switch -c qa/update-visual-baselines
+          git add -A -- '*__screenshots__*' || true
+          git diff --cached --quiet && echo "No baseline changed" && exit 0
+          git commit -m "Update visual baselines"
+          git push --force origin HEAD:qa/update-visual-baselines
